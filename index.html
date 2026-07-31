@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kartoteka przypomnień</title>
+<style>
+  :root {
+    --bg: #12181a;
+    --panel: #182023;
+    --line: #2a3438;
+    --text: #dfe6e6;
+    --dim: #7c8b8e;
+    --accent: #4fd1c5;
+    --accent-dim: #2b6b64;
+    --warn: #e8a355;
+    --danger: #d9695a;
+    --mono: "IBM Plex Mono", "SF Mono", Consolas, monospace;
+    --sans: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 40px 20px 80px; }
+
+  header { margin-bottom: 32px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  h1 { font-size: 28px; margin: 0 0 6px; font-weight: 600; letter-spacing: -0.01em; }
+  .sub { color: var(--dim); font-size: 14px; }
+
+  .next-up {
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    background: var(--panel);
+    border-radius: 4px;
+    padding: 16px 18px;
+    margin-bottom: 28px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--dim);
+  }
+  .next-up strong { color: var(--text); font-weight: 500; }
+
+  .setup {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 16px 18px;
+    margin-bottom: 28px;
+    font-size: 13px;
+    color: var(--dim);
+  }
+  .setup summary { cursor: pointer; color: var(--text); font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; }
+  .setup .fields { margin-top: 14px; display: grid; gap: 10px; }
+  .setup label { display: block; font-size: 12px; color: var(--dim); margin-bottom: 4px; font-family: var(--mono); }
+  .setup input {
+    width: 100%; background: var(--bg); border: 1px solid var(--line);
+    color: var(--text); padding: 8px 10px; border-radius: 3px; font-family: var(--mono); font-size: 12px;
+  }
+  .setup .save-btn { margin-top: 4px; }
+
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .toolbar h2 { font-size: 14px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin: 0; font-weight: 500; }
+
+  button {
+    font-family: var(--sans);
+    background: var(--accent);
+    color: #0a1414;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.ghost {
+    background: transparent;
+    color: var(--dim);
+    border: 1px solid var(--line);
+    font-weight: 500;
+  }
+  button.danger { background: var(--danger); color: #fff; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button:hover:not(:disabled) { filter: brightness(1.08); }
+
+  .card {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    border-radius: 4px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+  }
+  .card.inactive { opacity: 0.45; }
+  .card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .card-title { font-size: 15px; font-weight: 600; }
+  .card-date { font-family: var(--mono); font-size: 12px; color: var(--accent); white-space: nowrap; }
+  .card-meta { font-family: var(--mono); font-size: 11px; color: var(--dim); margin-top: 4px; }
+  .card-actions { margin-top: 10px; display: flex; gap: 8px; }
+  .card-actions button { padding: 5px 11px; font-size: 12px; }
+
+  .empty { text-align: center; padding: 40px 20px; color: var(--dim); font-size: 13px; border: 1px dashed var(--line); border-radius: 4px; }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    align-items: center; justify-content: center; padding: 20px; z-index: 10;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+    padding: 24px; width: 100%; max-width: 440px;
+  }
+  .modal h3 { margin: 0 0 18px; font-size: 16px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--dim); margin-bottom: 5px; font-family: var(--mono); }
+  .field input, .field select {
+    width: 100%; background: var(--bg); border: 1px solid var(--line);
+    color: var(--text); padding: 9px 10px; border-radius: 3px; font-size: 14px; font-family: var(--sans);
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+  .status { font-family: var(--mono); font-size: 12px; margin-top: 14px; min-height: 16px; }
+  .status.ok { color: var(--accent); }
+  .status.err { color: var(--danger); }
+
+  .fab-add { width: 100%; margin-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">// kartoteka przypomnień</div>
+    <h1>Reminder bot</h1>
+    <div class="sub">Terminarz przypomnień wysyłanych na Telegram przez codzienny check GitHub Actions.</div>
+  </header>
+
+  <div class="next-up" id="nextUp">Ładowanie...</div>
+
+  <details class="setup" id="setupBlock">
+    <summary>Ustawienia połączenia z repozytorium</summary>
+    <div class="fields">
+      <div>
+        <label>GitHub owner/repo (np. filip/reminder-bot)</label>
+        <input type="text" id="cfgRepo" placeholder="uzytkownik/reminder-bot" />
+      </div>
+      <div>
+        <label>GitHub Personal Access Token (uprawnienie: repo → contents)</label>
+        <input type="password" id="cfgToken" placeholder="ghp_..." />
+      </div>
+      <button class="save-btn" onclick="saveConfig()">Zapisz w tej przeglądarce</button>
+    </div>
+  </details>
+
+  <div class="toolbar">
+    <h2>Przypomnienia</h2>
+    <button onclick="openModal()">+ Dodaj</button>
+  </div>
+
+  <div id="list"><div class="empty">Ładowanie...</div></div>
+
+  <div class="status" id="status"></div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Nowe przypomnienie</h3>
+    <input type="hidden" id="editId" />
+    <div class="field">
+      <label>Tytuł</label>
+      <input type="text" id="fTitle" placeholder="np. Polisa OC - Toyota" />
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Kategoria</label>
+        <input type="text" id="fCategory" placeholder="polisa" />
+      </div>
+      <div class="field">
+        <label>Data wydarzenia</label>
+        <input type="date" id="fDate" />
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Przypomnij ile dni wcześniej</label>
+        <input type="number" id="fDaysBefore" value="30" min="0" />
+      </div>
+      <div class="field">
+        <label>Powtarzaj</label>
+        <select id="fRepeat">
+          <option value="">Nie powtarzaj</option>
+          <option value="weekly">Co tydzień</option>
+          <option value="monthly">Co miesiąc</option>
+          <option value="yearly">Co rok</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="ghost" onclick="closeModal()">Anuluj</button>
+      <button onclick="saveReminder()">Zapisz</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const LS_REPO = "reminder_bot_repo";
+const LS_TOKEN = "reminder_bot_token";
+let fileSha = null;
+let reminders = [];
+
+function getConfig() {
+  return {
+    repo: localStorage.getItem(LS_REPO) || "",
+    token: localStorage.getItem(LS_TOKEN) || "",
+  };
+}
+
+function saveConfig() {
+  const repo = document.getElementById("cfgRepo").value.trim();
+  const token = document.getElementById("cfgToken").value.trim();
+  if (repo) localStorage.setItem(LS_REPO, repo);
+  if (token) localStorage.setItem(LS_TOKEN, token);
+  document.getElementById("setupBlock").removeAttribute("open");
+  loadReminders();
+}
+
+function setStatus(msg, isErr) {
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  el.className = "status " + (isErr ? "err" : "ok");
+}
+
+async function apiFetchFile() {
+  const { repo, token } = getConfig();
+  if (!repo || !token) {
+    setStatus("Uzupełnij ustawienia repozytorium powyżej.", true);
+    document.getElementById("setupBlock").setAttribute("open", "true");
+    return null;
+  }
+  const res = await fetch(`https://api.github.com/repos/${repo}/contents/reminders.json`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+  });
+  if (!res.ok) {
+    setStatus(`Błąd odczytu (${res.status}). Sprawdź nazwę repo i token.`, true);
+    return null;
+  }
+  const data = await res.json();
+  fileSha = data.sha;
+  const content = decodeURIComponent(escape(atob(data.content)));
+  return JSON.parse(content);
+}
+
+async function apiSaveFile(newReminders, message) {
+  const { repo, token } = getConfig();
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(newReminders, null, 2) + "\n")));
+  const res = await fetch(`https://api.github.com/repos/${repo}/contents/reminders.json`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+    body: JSON.stringify({ message, content, sha: fileSha }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Zapis nie powiódł się (${res.status}): ${body}`);
+  }
+  const data = await res.json();
+  fileSha = data.content.sha;
+}
+
+async function loadReminders() {
+  document.getElementById("list").innerHTML = '<div class="empty">Ładowanie...</div>';
+  const data = await apiFetchFile();
+  if (data === null) {
+    document.getElementById("list").innerHTML = "";
+    document.getElementById("nextUp").textContent = "—";
+    return;
+  }
+  reminders = data;
+  render();
+}
+
+function daysUntil(dateStr) {
+  const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z");
+  const d = new Date(dateStr + "T00:00:00Z");
+  return Math.round((d - today) / 86400000);
+}
+
+function render() {
+  const list = document.getElementById("list");
+  const active = reminders.filter((r) => r.active);
+
+  if (active.length) {
+    const soonest = [...active].sort((a, b) => new Date(a.target_date) - new Date(b.target_date))[0];
+    const d = daysUntil(soonest.target_date);
+    document.getElementById("nextUp").innerHTML =
+      `Najbliższe: <strong>${soonest.title}</strong> — ${soonest.target_date} (za ${d} dni)`;
+  } else {
+    document.getElementById("nextUp").textContent = "Brak aktywnych przypomnień.";
+  }
+
+  if (!reminders.length) {
+    list.innerHTML = '<div class="empty">Brak przypomnień. Dodaj pierwsze przyciskiem powyżej.</div>';
+    return;
+  }
+
+  const sorted = [...reminders].sort((a, b) => new Date(a.target_date) - new Date(b.target_date));
+  list.innerHTML = sorted
+    .map((r) => {
+      const d = daysUntil(r.target_date);
+      return `
+      <div class="card ${r.active ? "" : "inactive"}">
+        <div class="card-top">
+          <div class="card-title">${escapeHtml(r.title)}</div>
+          <div class="card-date">${r.target_date}</div>
+        </div>
+        <div class="card-meta">
+          ${r.category ? escapeHtml(r.category) + " · " : ""}
+          przypomnienie ${r.remind_days_before} dni wcześniej
+          ${r.repeat_interval ? " · powtarza się: " + r.repeat_interval : ""}
+          ${r.active ? " · za " + d + " dni" : " · nieaktywne"}
+        </div>
+        <div class="card-actions">
+          <button class="ghost" onclick="editReminder('${r.id}')">Edytuj</button>
+          <button class="ghost" onclick="toggleActive('${r.id}')">${r.active ? "Wyłącz" : "Włącz"}</button>
+          <button class="danger" onclick="deleteReminder('${r.id}')">Usuń</button>
+        </div>
+      </div>`;
+    })
+    .join("");
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function openModal() {
+  document.getElementById("modalTitle").textContent = "Nowe przypomnienie";
+  document.getElementById("editId").value = "";
+  document.getElementById("fTitle").value = "";
+  document.getElementById("fCategory").value = "";
+  document.getElementById("fDate").value = "";
+  document.getElementById("fDaysBefore").value = 30;
+  document.getElementById("fRepeat").value = "";
+  document.getElementById("modalOverlay").classList.add("open");
+}
+
+function editReminder(id) {
+  const r = reminders.find((x) => x.id === id);
+  if (!r) return;
+  document.getElementById("modalTitle").textContent = "Edytuj przypomnienie";
+  document.getElementById("editId").value = r.id;
+  document.getElementById("fTitle").value = r.title;
+  document.getElementById("fCategory").value = r.category || "";
+  document.getElementById("fDate").value = r.target_date;
+  document.getElementById("fDaysBefore").value = r.remind_days_before;
+  document.getElementById("fRepeat").value = r.repeat_interval || "";
+  document.getElementById("modalOverlay").classList.add("open");
+}
+
+function closeModal() {
+  document.getElementById("modalOverlay").classList.remove("open");
+}
+
+async function saveReminder() {
+  const id = document.getElementById("editId").value;
+  const title = document.getElementById("fTitle").value.trim();
+  const date = document.getElementById("fDate").value;
+  if (!title || !date) {
+    setStatus("Uzupełnij tytuł i datę.", true);
+    return;
+  }
+  const payload = {
+    title,
+    category: document.getElementById("fCategory").value.trim(),
+    target_date: date,
+    remind_days_before: parseInt(document.getElementById("fDaysBefore").value || "0", 10),
+    repeat_interval: document.getElementById("fRepeat").value || null,
+  };
+
+  if (id) {
+    const r = reminders.find((x) => x.id === id);
+    Object.assign(r, payload);
+  } else {
+    reminders.push({
+      id: crypto.randomUUID(),
+      active: true,
+      last_sent: null,
+      ...payload,
+    });
+  }
+
+  closeModal();
+  await persist(id ? "Edytuj przypomnienie: " + title : "Dodaj przypomnienie: " + title);
+}
+
+async function toggleActive(id) {
+  const r = reminders.find((x) => x.id === id);
+  r.active = !r.active;
+  await persist((r.active ? "Włącz" : "Wyłącz") + " przypomnienie: " + r.title);
+}
+
+async function deleteReminder(id) {
+  const r = reminders.find((x) => x.id === id);
+  if (!confirm(`Usunąć „${r.title}”?`)) return;
+  reminders = reminders.filter((x) => x.id !== id);
+  await persist("Usuń przypomnienie: " + r.title);
+}
+
+async function persist(message) {
+  setStatus("Zapisuję...");
+  try {
+    await apiSaveFile(reminders, message);
+    render();
+    setStatus("Zapisano.");
+  } catch (e) {
+    setStatus(e.message, true);
+  }
+}
+
+// init
+(function () {
+  const { repo, token } = getConfig();
+  document.getElementById("cfgRepo").value = repo;
+  document.getElementById("cfgToken").value = token;
+  if (repo && token) {
+    loadReminders();
+  } else {
+    document.getElementById("setupBlock").setAttribute("open", "true");
+    document.getElementById("list").innerHTML = "";
+    document.getElementById("nextUp").textContent = "—";
+  }
+})();
+</script>
+</body>
+</html>
