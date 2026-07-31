@@ -1,12 +1,1 @@
-[
-  {
-    "id": "54598869-7ff4-4b4b-b96e-f61b27ea5b5f",
-    "active": true,
-    "last_sent": null,
-    "title": "Polisa dom panoramiczna",
-    "category": "Polisa",
-    "target_date": "2026-08-01",
-    "remind_days_before": 1,
-    "repeat_interval": "yearly"
-  }
-]
+[]
