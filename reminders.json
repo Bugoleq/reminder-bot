@@ -1,12 +1,1 @@
-[
-  {
-    "id": "example-1",
-    "title": "Przykład: Polisa OC - Toyota",
-    "category": "polisa",
-    "target_date": "2026-12-01",
-    "remind_days_before": 30,
-    "repeat_interval": "yearly",
-    "active": false,
-    "last_sent": null
-  }
-]
+[]
