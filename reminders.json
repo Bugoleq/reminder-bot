@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "631f576d-9ebd-4c82-aeca-4901ed9297b8",
+    "active": true,
+    "last_sent": null,
+    "title": "Polisa za dom",
+    "category": "test",
+    "target_date": "2026-08-01",
+    "remind_days_before": 1,
+    "repeat_interval": "yearly"
+  }
+]
