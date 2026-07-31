@@ -8,15 +8,5 @@
     "repeat_interval": "yearly",
     "active": false,
     "last_sent": null
-  },
-  {
-    "id": "c0d68f8b-0c36-47e7-bf02-b08e99f8f77e",
-    "active": true,
-    "last_sent": "2026-07-31",
-    "title": "polisa za dom",
-    "category": "test",
-    "target_date": "2026-07-31",
-    "remind_days_before": 0,
-    "repeat_interval": null
   }
 ]
