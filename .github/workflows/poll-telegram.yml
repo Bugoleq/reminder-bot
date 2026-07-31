@@ -1,0 +1,39 @@
+name: Poll Telegram Commands
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: poll-telegram
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Poll Telegram for commands/buttons
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node poll.js
+
+      - name: Commit changes (jeśli są)
+        run: |
+          git config user.name "reminder-bot"
+          git config user.email "reminder-bot@users.noreply.github.com"
+          git add reminders.json bot_state.json
+          git diff --staged --quiet || git commit -m "chore: process telegram updates [skip ci]"
+          git push
