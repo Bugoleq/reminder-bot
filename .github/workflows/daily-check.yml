@@ -1,0 +1,37 @@
+name: Daily Reminder Check
+
+on:
+  schedule:
+    # 8:00 czasu polskiego = 6:00 UTC (zima) / 7:00 UTC (lato, CEST).
+    # Ustawione na 7:00 UTC jako kompromis - latem trafi na 9:00, zimą na 8:00.
+    - cron: "0 7 * * *"
+  workflow_dispatch: {} # pozwala ręcznie odpalić z zakładki "Actions" na GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  check-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run reminder check
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node check.js
+
+      - name: Commit changes (jeśli są)
+        run: |
+          git config user.name "reminder-bot"
+          git config user.email "reminder-bot@users.noreply.github.com"
+          git add reminders.json
+          git diff --staged --quiet || git commit -m "chore: update reminders [skip ci]"
+          git push
