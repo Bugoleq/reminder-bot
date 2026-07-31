@@ -17,6 +17,8 @@
     "category": "test",
     "target_date": "2026-07-31",
     "remind_days_before": 0,
-    "repeat_interval": null
+    "repeat_interval": null,
+    "snoozed_until": "2026-08-07",
+    "muted_until": "2026-08-07"
   }
 ]
