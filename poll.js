@@ -98,14 +98,34 @@ async function handleListCommand() {
 }
 
 async function handleHelpCommand() {
-  await sendMessage(
-    "🤖 <b>Dostępne komendy:</b>\n\n" +
-      "/lista — pokazuje wszystkie aktywne przypomnienia\n" +
-      "/pomoc — ta wiadomość\n\n" +
-      "Pod każdym przypomnieniem, które przyjdzie automatycznie, masz przyciski:\n" +
-      "✅ Opłacono / Zrobione — wyłącza przypomnienie\n" +
-      "⏰ Za 7 / 30 dni — odkłada przypomnienie o tyle dni"
-  );
+  const res = await fetch(`${API}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      parse_mode: "HTML",
+      text:
+        "🤖 <b>Jak działa ten bot</b>\n\n" +
+        "/lista — pokazuje wszystkie aktywne przypomnienia\n" +
+        "/pomoc — ta wiadomość (przypięta na górze czatu)\n\n" +
+        "Pod każdym przypomnieniem, które przyjdzie automatycznie, są przyciski:\n" +
+        "✅ Opłacono / Zrobione — wyłącza przypomnienie\n" +
+        "⏰ Za 7 / 30 dni — odkłada przypomnienie o tyle dni",
+    }),
+  });
+  const data = await res.json();
+  if (data.ok && data.result && data.result.message_id) {
+    // Przypnij tę wiadomość na górze czatu, żeby zawsze była pod ręką
+    await fetch(`${API}/pinChatMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        message_id: data.result.message_id,
+        disable_notification: true,
+      }),
+    });
+  }
 }
 
 function escapeHtml(s) {
