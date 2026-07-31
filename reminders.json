@@ -1,15 +1,5 @@
 [
   {
-    "id": "31bef27d-efe8-4ed3-82a9-d7e75807cf34",
-    "active": false,
-    "last_sent": "2026-07-31",
-    "title": "Test — sprawdzenie systemu",
-    "category": "test",
-    "target_date": "2026-07-31",
-    "remind_days_before": 0,
-    "repeat_interval": null
-  },
-  {
     "id": "ec616b36-b9d8-42fa-8e2e-7b5e0d15952c",
     "active": true,
     "last_sent": "2026-07-31",
