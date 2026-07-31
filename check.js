@@ -1,7 +1,8 @@
 // check.js
 // Odczytuje reminders.json, sprawdza które przypomnienia są dziś "do wysłania"
-// (target_date - remind_days_before === dzisiaj), wysyła wiadomość na Telegram,
-// zapisuje last_sent i (jeśli repeat_interval ustawiony) przesuwa datę na kolejny cykl.
+// (target_date - remind_days_before === dzisiaj, lub aktywny snooze), wysyła
+// wiadomość na Telegram z przyciskami, zapisuje last_sent i (jeśli
+// repeat_interval ustawiony) przesuwa datę na kolejny cykl.
 
 const fs = require("fs");
 const path = require("path");
@@ -17,7 +18,6 @@ if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
 }
 
 function todayISO() {
-  // Data w formacie YYYY-MM-DD, wg czasu UTC (GitHub Actions runnery działają w UTC)
   return new Date().toISOString().slice(0, 10);
 }
 
@@ -39,7 +39,7 @@ function advanceDate(dateStr, interval) {
   return d.toISOString().slice(0, 10);
 }
 
-async function sendTelegramMessage(text) {
+async function sendTelegramMessage(text, reminderId) {
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
   const res = await fetch(url, {
     method: "POST",
@@ -48,6 +48,15 @@ async function sendTelegramMessage(text) {
       chat_id: TELEGRAM_CHAT_ID,
       text,
       parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "✅ Opłacono / Zrobione", callback_data: `done:${reminderId}` }],
+          [
+            { text: "⏰ Za 7 dni", callback_data: `snooze7:${reminderId}` },
+            { text: "⏰ Za 30 dni", callback_data: `snooze30:${reminderId}` },
+          ],
+        ],
+      },
     }),
   });
   if (!res.ok) {
@@ -66,12 +75,29 @@ async function main() {
   for (const r of reminders) {
     if (!r.active) continue;
 
+    // 1. Snooze ma priorytet — jeśli user kliknął "Za X dni", i termin snooze nadszedł
+    if (r.snoozed_until && r.snoozed_until <= today && r.last_sent !== today) {
+      const text = `🔔 <b>Przypomnienie (odłożone)</b>\n\n${r.title}` +
+        (r.category ? `\nKategoria: ${r.category}` : "");
+      console.log(`Wysyłam (snooze): ${r.title}`);
+      await sendTelegramMessage(text, r.id);
+      r.last_sent = today;
+      r.snoozed_until = null;
+      r.muted_until = null;
+      changed = true;
+      continue;
+    }
+
+    // 2. Jeśli aktywne wyciszenie po snooze (np. kliknięto "za 30 dni", ale
+    //    normalny termin przypomnienia wypadałby wcześniej) — pomiń normalne sprawdzanie
+    if (r.muted_until && r.muted_until >= today) {
+      continue;
+    }
+
+    // 3. Normalna logika: target_date - remind_days_before
     const remindDate = subtractDays(r.target_date, r.remind_days_before);
 
-    // Wyślij, jeśli dziś jest dzień przypomnienia i jeszcze dziś nie wysłano
     if (remindDate <= today && r.last_sent !== today && r.target_date >= today) {
-      // remindDate <= today (a nie tylko ===) na wypadek, gdyby workflow nie
-      // uruchomił się dokładnie w dniu przypomnienia (np. przerwa w GitHub Actions)
       const daysLeft = Math.round(
         (new Date(r.target_date) - new Date(today)) / (1000 * 60 * 60 * 24)
       );
@@ -82,12 +108,12 @@ async function main() {
         `Data: ${r.target_date} (za ${daysLeft} dni)`;
 
       console.log(`Wysyłam: ${r.title}`);
-      await sendTelegramMessage(text);
+      await sendTelegramMessage(text, r.id);
       r.last_sent = today;
       changed = true;
     }
 
-    // Jeśli termin minął i przypomnienie jest cykliczne — przesuń na kolejny cykl
+    // 4. Jeśli termin minął i przypomnienie jest cykliczne — przesuń na kolejny cykl
     if (r.repeat_interval && r.target_date < today) {
       const newDate = advanceDate(r.target_date, r.repeat_interval);
       console.log(`Przesuwam cykliczne przypomnienie "${r.title}": ${r.target_date} -> ${newDate}`);
