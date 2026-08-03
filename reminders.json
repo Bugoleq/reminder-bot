@@ -2,10 +2,10 @@
   {
     "id": "c3051ad8-9109-49bd-9abe-db4917b44ac9",
     "active": true,
-    "last_sent": "2026-08-02",
+    "last_sent": null,
     "title": "Dom panoramiczna",
     "category": "polisa",
-    "target_date": "2026-08-02",
+    "target_date": "2027-08-02",
     "remind_days_before": 1,
     "repeat_interval": "yearly"
   }
